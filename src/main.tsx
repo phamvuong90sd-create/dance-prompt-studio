@@ -1,0 +1,59 @@
+import React, {useState} from 'react';
+import {createRoot} from 'react-dom/client';
+import {Upload, Copy, Download, Sparkles} from 'lucide-react';
+import './style.css';
+
+declare global { interface Window { danceAPI: any } }
+const api = () => window.danceAPI || { openFile: async()=>[], process: async()=>({ok:false,error:'api_not_ready'}), saveText: async()=>({ok:false}) };
+
+function Field({label, children}:{label:string, children:React.ReactNode}){ return <label className="field"><span>{label}</span>{children}</label>; }
+
+function App(){
+  const [apiKeys,setApiKeys]=useState('');
+  const [video,setVideo]=useState('');
+  const [model,setModel]=useState('');
+  const [outfit,setOutfit]=useState('');
+  const [chunk,setChunk]=useState('8');
+  const [platform,setPlatform]=useState('veo');
+  const [extra,setExtra]=useState('');
+  const [status,setStatus]=useState('Sẵn sàng');
+  const [result,setResult]=useState('');
+
+  async function pick(setter:any, filters:any){ const r=await api().openFile({properties:['openFile'], filters}); if(r?.[0]) setter(r[0]); }
+  async function run(){
+    if(!video){ setStatus('Cần chọn video mẫu'); return; }
+    if(!model){ setStatus('Cần chọn ảnh model'); return; }
+    if(!apiKeys.trim()){ setStatus('Cần Gemini API key'); return; }
+    setStatus('Đang phân tích video, model, trang phục và tạo prompt...');
+    const r=await api().process({apiKeys, video, model, outfit, chunkSeconds:chunk, platform, extra});
+    if(r?.ok){ setResult(r.text); setStatus(`Hoàn tất: ${r.count} prompt`); }
+    else setStatus('Lỗi: '+(r?.error||'unknown'));
+  }
+  async function copy(){ if(result){ await navigator.clipboard.writeText(result); setStatus('Đã copy prompt'); } }
+  async function download(){ const r=await api().saveText({defaultPath:`dance-prompts-${Date.now()}.txt`, text:result}); setStatus(r?.ok?'Đã lưu TXT':'Đã huỷ lưu'); }
+
+  return <div className="app">
+    <aside>
+      <h1>Dance Prompt Studio</h1>
+      <p>Tạo prompt model nữ nhảy theo video mẫu</p>
+      <Field label="Gemini API keys"><textarea value={apiKeys} onChange={e=>setApiKeys(e.target.value)} placeholder="Mỗi dòng một API key"/></Field>
+      <Field label="Cắt prompt mỗi"><input value={chunk} onChange={e=>setChunk(e.target.value.replace(/[^0-9]/g,''))}/><small>giây</small></Field>
+      <Field label="Nền tảng prompt"><select value={platform} onChange={e=>setPlatform(e.target.value)}><option value="veo">Google Flow / Veo</option><option value="kling">Kling</option><option value="runway">Runway</option></select></Field>
+      <Field label="Yêu cầu thêm"><textarea value={extra} onChange={e=>setExtra(e.target.value)} placeholder="Ví dụ: cinematic, full body, no text, studio light..."/></Field>
+      <button className="primary" onClick={run}><Sparkles size={18}/> Tạo prompt</button>
+    </aside>
+    <main>
+      <section className="grid">
+        <div className="card"><h2><Upload/> Video mẫu</h2><button onClick={()=>pick(setVideo,[{name:'Video',extensions:['mp4','mov','webm','mkv']}])}>Chọn video</button><p>{video||'Chưa chọn video'}</p></div>
+        <div className="card"><h2><Upload/> Ảnh model</h2><button onClick={()=>pick(setModel,[{name:'Image',extensions:['jpg','jpeg','png','webp']}])}>Chọn ảnh model</button><p>{model||'Chưa chọn ảnh model'}</p></div>
+        <div className="card"><h2><Upload/> Ảnh quần áo</h2><button onClick={()=>pick(setOutfit,[{name:'Image',extensions:['jpg','jpeg','png','webp']}])}>Chọn ảnh quần áo</button><p>{outfit||'Không bắt buộc'}</p></div>
+      </section>
+      <section className="result">
+        <div className="bar"><b>{status}</b><div><button onClick={copy}><Copy size={16}/> Copy</button><button onClick={download}><Download size={16}/> TXT</button></div></div>
+        <pre>{result||'Chưa có kết quả...'}</pre>
+      </section>
+    </main>
+  </div>
+}
+
+createRoot(document.getElementById('root')!).render(<App/>);
