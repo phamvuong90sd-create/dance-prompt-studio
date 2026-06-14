@@ -22,5 +22,19 @@
     "typescript": "latest",
     "vite": "latest",
     "wait-on": "latest"
+  },
+  "build": {
+    "appId": "com.openclaw.danceprompt",
+    "productName": "Dance Prompt Studio",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
