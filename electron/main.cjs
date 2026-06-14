@@ -27,7 +27,7 @@ function createWindow(){
     let loaded = false;
     for (const p of paths) {
       if (fs.existsSync(p)) {
-        w.loadFile(p);
+        await w.loadFile(p);
         loaded = true;
         break;
       }
