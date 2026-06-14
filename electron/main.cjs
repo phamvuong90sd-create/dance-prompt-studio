@@ -3,7 +3,7 @@ const path=require('path'); const fs=require('fs');
 
 function createWindow(){
   const w=new BrowserWindow({width:1300, height:850, backgroundColor:'#070b14', webPreferences:{preload:path.join(__dirname,'preload.cjs'), contextIsolation:true, nodeIntegration:false}});
-  if(app.isPackaged) w.loadFile(path.join(__dirname,'..','dist','index.html')); else w.loadURL('http://127.0.0.1:5173');
+  if(app.isPackaged) w.loadFile(path.join(app.getAppPath(), 'dist', 'index.html')); else w.loadURL('http://127.0.0.1:5173');
 }
 app.whenReady().then(createWindow);
 app.on('window-all-closed',()=>{ if(process.platform!=='darwin') app.quit(); });
