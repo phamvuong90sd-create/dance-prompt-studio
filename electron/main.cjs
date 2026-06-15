@@ -90,7 +90,7 @@ async function waitFileReady(apiKey, file){
 }
 
 async function geminiGenerate(apiKey, parts, system, preferredModel){
-  const models=[preferredModel, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter((v,i,a)=>v && a.indexOf(v)===i);
+  const models=['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter((v,i,a)=>v && a.indexOf(v)===i);
   let last='';
   for(const m of models){
     try{
@@ -109,7 +109,53 @@ async function geminiGenerate(apiKey, parts, system, preferredModel){
 }
 
 ipcMain.handle('media:download', async(_,m)=>{ const r=await fetch(m.url); const b=Buffer.from(await r.arrayBuffer()); const s=await dialog.showSaveDialog({defaultPath:m.name}); if(!s.canceled) fs.writeFileSync(s.filePath, b); return {ok:!s.canceled}; });
-ipcMain.handle('media:generate', async(_,p)=>{ /* Mock gen logic: Thuc te se goi Imagen API */ return [{type:'image', url:'https://picsum.photos/800/600', name:'gen-1.png'}]; });
+
+async function generateBananaImage(apiKey, prompt) {
+  // Use Imagen 3 / Nano Banana ID
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ instances: [{ prompt }], parameters: { sampleCount: 1 } })
+  });
+  const o = await r.json();
+  if (!r.ok) throw new Error(o.error?.message || 'Banana Image failed');
+  const b64 = o.predictions?.[0]?.bytesBase64Encoded;
+  if (!b64) throw new Error('No image returned');
+  return { type: 'image', url: `data:image/png;base64,${b64}`, name: `banana-${Date.now()}.png` };
+}
+
+async function generateVeoVideo(apiKey, prompt) {
+  // Use Veo 3.1 ID
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-generate:predict?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ instances: [{ prompt }] })
+  });
+  const o = await r.json();
+  if (!r.ok) throw new Error(o.error?.message || 'Veo Video failed');
+  // Veo usually returns a video URI or async job; for MVP we assume direct/pre-signed URL
+  const vUrl = o.predictions?.[0]?.videoUri;
+  if (!vUrl) throw new Error('No video returned (Veo may be async)');
+  return { type: 'video', url: vUrl, name: `veo-${Date.now()}.mp4` };
+}
+
+ipcMain.handle('media:generate', async (_, p) => {
+  try {
+    const keys = parseKeys(p.apiKeys);
+    const apiKey = keys[0];
+    const promptList = p.prompts.split('Prompt').filter(s => s.trim().length > 10).map(s => s.trim());
+    const results = [];
+    if (p.type === 'image') {
+      const item = await generateBananaImage(apiKey, promptList[0] || p.prompts);
+      results.push(item);
+    } else {
+      const item = await generateVeoVideo(apiKey, promptList[0] || p.prompts);
+      results.push(item);
+    }
+    return results;
+  } catch (e) { return { error: String(e.message || e) }; }
+});
+
 ipcMain.handle('process:run', async(_,p)=> {
   try {
     const keys=parseKeys(p.apiKeys);

@@ -55,7 +55,7 @@ function App(){
       <p>Tạo ảnh/video model nữ nhảy theo video mẫu</p>
       <Field label="Gemini API keys"><textarea value={apiKeys} onChange={e=>setApiKeys(e.target.value)} placeholder="Mỗi dòng một API key"/><div className="minirow"><button onClick={()=>{localStorage.setItem('dancePromptStudioConfig', JSON.stringify({apiKeys, chunk, platform, modelName, extra})); setStatus('Đã lưu cấu hình API')}}>Lưu cấu hình</button><button onClick={()=>{localStorage.removeItem('dancePromptStudioConfig'); setApiKeys(''); setStatus('Đã xoá API lưu')}}>Xoá API lưu</button></div></Field>
       <Field label="Cắt mỗi"><input value={chunk} onChange={e=>setChunk(e.target.value.replace(/[^0-9]/g,''))}/><small>giây</small></Field>
-      <Field label="Gemini Model"><select value={modelName} onChange={e=>setModelName(e.target.value)}><option value="gemini-2.5-flash">Gemini 2.5 Flash</option><option value="gemini-3.5-flash">Gemini 3.5 Flash</option></select></Field>
+      {/* Gemini 2.5 forced */}<Field label="Gemini Model" style={{display:"none"}}><select value={modelName} onChange={e=>setModelName(e.target.value)}><option value="gemini-2.5-flash">Gemini 2.5 Flash</option><option value="gemini-3.5-flash">Gemini 3.5 Flash</option></select></Field>
       <Field label="Nền tảng"><select value={platform} onChange={e=>setPlatform(e.target.value)}><option value="veo">Google Flow / Veo</option><option value="kling">Kling</option><option value="runway">Runway</option></select></Field>
       <Field label="Yêu cầu thêm"><textarea value={extra} onChange={e=>setExtra(e.target.value)} placeholder="Ví dụ: cinematic, full body, no text, studio light..."/></Field>
       <button className="primary" onClick={run}><Sparkles size={18}/> Phân tích & tạo prompt nền</button>
