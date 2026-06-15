@@ -120,8 +120,28 @@ ipcMain.handle('process:run', async(_,p)=> {
     let outfitFile=null;
     if(p.outfit) outfitFile=await waitFileReady(apiKey, await uploadGeminiFile(apiKey,p.outfit));
     const chunk=Number(p.chunkSeconds||8)||8;
-    const system=`You are Dance Prompt Studio director. Output sequence of prompts.`;
-    const instruction=`Create prompts for ${p.platform}. Chunk: ${chunk}s. Reference video for movement. Reference model image for face/body. Reference outfit if provided. Output: Prompt 01, Prompt 02...`;
+    const system=`You are Dance Prompt Studio director. Your job is to convert a reference dance video into extremely precise, safe video-generation prompts. Do not invent new choreography. Do not simplify. Do not change timing. Output plain text only.`;
+    const instruction=`Create prompts for ${p.platform}. Chunk size: ${chunk}s.
+
+CRITICAL CHOREOGRAPHY LOCK:
+- The generated prompts MUST mimic the reference dance video as closely as possible.
+- For each time range, describe the exact dance movement from the source video: arm path, hand gesture, shoulder angle, hip movement, torso lean, head turn, foot placement, step direction, jump/spin/transition, rhythm, speed, pauses, and weight shifts.
+- Describe facial expression changes from the video: smile, eye direction, mouth shape, eyebrow movement, confidence, intensity, and timing.
+- Describe camera angle/framing from the video if visible. Keep full body visible whenever legs/feet matter.
+- No improvisation, no new choreography, no missing gestures, no replacing movements with generic dancing.
+- Use phrases such as: “frame-accurate choreography match”, “same timing as reference”, “same body rhythm”, “same facial expression sequence”.
+
+MODEL IDENTITY LOCK:
+- The female model must match the uploaded model image: same face, hairstyle, body proportions, skin tone, expression style, and overall identity.
+- Do not change face, age, body shape, or hairstyle.
+
+OUTFIT LOCK:
+- If an outfit image is provided, the model wears the exact outfit: same cut, fabric, color, logo/pattern, fit, and accessories.
+
+NEGATIVE CONSTRAINTS:
+- no different choreography, no extra limbs, no distorted hands, no face drift, no identity drift, no text, no watermark, no NSFW.
+
+Output numbered prompts: Prompt 01, Prompt 02, etc. Each prompt must include a time range and detailed choreography notes.`;
     const parts=[
       {text:instruction},
       {text:'Ref video:'},{fileData:{mimeType:videoFile.mimeType,fileUri:videoFile.uri}},
