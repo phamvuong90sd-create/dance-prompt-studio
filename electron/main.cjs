@@ -14,25 +14,18 @@ function createWindow(){
 
   if (!app.isPackaged) {
     w.loadURL('http://127.0.0.1:5173').catch(() => {
-      // Fallback if dev server not running
       w.loadFile(path.join(__dirname, '../dist/index.html'));
     });
   } else {
-    // Packaged mode fallbacks
-    const paths = [
-      path.join(__dirname, '..', 'dist', 'index.html'),
-      path.join(app.getAppPath(), 'dist', 'index.html'),
-      path.join(process.resourcesPath, 'app', 'dist', 'index.html')
-    ];
-    let loaded = false;
-    for (const p of paths) {
-      if (fs.existsSync(p)) {
-        await w.loadFile(p);
-        loaded = true;
-        break;
-      }
+    // Packaged mode: use relative path from app root
+    const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
+    if (fs.existsSync(indexPath)) {
+      w.loadFile(indexPath);
+    } else {
+      // Fallback for different build structures
+      const fallbackPath = path.join(__dirname, '..', 'dist', 'index.html');
+      w.loadFile(fallbackPath);
     }
-    if (!loaded) console.error("Could not find index.html in any known path");
   }
 }
 
@@ -71,7 +64,7 @@ async function uploadGeminiFile(apiKey, filePath){
     },
     body:JSON.stringify({file:{display_name:name}})
   });
-  if(!start.ok) throw new Error('upload_start_failed_'+start.status+': '+await start.text());
+  if(!start.ok) throw new Error('upload_start_failed_'+start.status);
   const uploadUrl=start.headers.get('x-goog-upload-url');
   if(!uploadUrl) throw new Error('missing_upload_url');
   const up=await fetch(uploadUrl,{
@@ -80,7 +73,7 @@ async function uploadGeminiFile(apiKey, filePath){
     body:data
   });
   const obj=await up.json().catch(()=>({}));
-  if(!up.ok) throw new Error('upload_failed_'+up.status+': '+JSON.stringify(obj));
+  if(!up.ok) throw new Error('upload_failed_'+up.status);
   return obj.file;
 }
 
@@ -104,7 +97,7 @@ async function geminiGenerate(apiKey, parts, system){
       const body={
         contents:[{role:'user',parts}],
         systemInstruction:{parts:[{text:system}]},
-        generationConfig:{temperature:0.35}
+        generationConfig:{temperature:0.3}
       };
       const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
       const o=await r.json().catch(()=>({}));
@@ -127,16 +120,14 @@ ipcMain.handle('process:run', async(_,p)=> {
     let outfitFile=null;
     if(p.outfit) outfitFile=await waitFileReady(apiKey, await uploadGeminiFile(apiKey,p.outfit));
     const chunk=Number(p.chunkSeconds||8)||8;
-    const system=`You are Dance Prompt Studio, professional director. Output plain text dance prompts.`;
-    const instruction=`Create a sequence of prompts for ${p.platform}. Chunk size: ${chunk}s. 
-    Match model to reference image. ${outfitFile?'Match outfit to outfit reference image.':''}
-    Output: Prompt 01, Prompt 02, etc.`;
+    const system=`You are Dance Prompt Studio director. Output sequence of prompts.`;
+    const instruction=`Create prompts for ${p.platform}. Chunk: ${chunk}s. Reference video for movement. Reference model image for face/body. Reference outfit if provided. Output: Prompt 01, Prompt 02...`;
     const parts=[
       {text:instruction},
-      {text:'Reference dance video:'},{fileData:{mimeType:videoFile.mimeType,fileUri:videoFile.uri}},
-      {text:'Reference model image:'},{fileData:{mimeType:modelFile.mimeType,fileUri:modelFile.uri}}
+      {text:'Ref video:'},{fileData:{mimeType:videoFile.mimeType,fileUri:videoFile.uri}},
+      {text:'Ref model:'},{fileData:{mimeType:modelFile.mimeType,fileUri:modelFile.uri}}
     ];
-    if(outfitFile) parts.push({text:'Reference outfit image:'},{fileData:{mimeType:outfitFile.mimeType,fileUri:outfitFile.uri}});
+    if(outfitFile) parts.push({text:'Ref outfit:'},{fileData:{mimeType:outfitFile.mimeType,fileUri:outfitFile.uri}});
     const text=await geminiGenerate(apiKey,parts,system);
     return {ok:true,count:(text.match(/Prompt/gi)||[]).length,text};
   } catch(e) { return {ok:false,error:String(e.message||e)}; }
