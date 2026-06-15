@@ -110,23 +110,50 @@ async function geminiGenerate(apiKey, parts, system, preferredModel){
 
 ipcMain.handle('media:download', async(_,m)=>{ const r=await fetch(m.url); const b=Buffer.from(await r.arrayBuffer()); const s=await dialog.showSaveDialog({defaultPath:m.name}); if(!s.canceled) fs.writeFileSync(s.filePath, b); return {ok:!s.canceled}; });
 
+
 async function generateBananaImage(apiKey, prompt) {
-  // Use Imagen 3 / Nano Banana ID
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ instances: [{ prompt }], parameters: { sampleCount: 1 } })
-  });
-  const o = await r.json();
-  if (!r.ok) throw new Error(o.error?.message || 'Banana Image failed');
-  const b64 = o.predictions?.[0]?.bytesBase64Encoded;
-  if (!b64) throw new Error('No image returned');
-  return { type: 'image', url: `data:image/png;base64,${b64}`, name: `banana-${Date.now()}.png` };
+  // Cac model ID co the co
+  const modelIds = ['imagen-3.0-generate-001', 'imagen-3.0-fast-generate-001', 'imagen-2'];
+  let lastErr = '';
+  
+  for (const mid of modelIds) {
+    try {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mid}:predict?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instances: [{ prompt }], parameters: { sampleCount: 1 } })
+      });
+      const o = await r.json();
+      if (r.ok && o.predictions?.[0]?.bytesBase64Encoded) {
+        return { type: 'image', url: `data:image/png;base64,${o.predictions[0].bytesBase64Encoded}`, name: `banana-${Date.now()}.png` };
+      }
+      lastErr = o.error?.message || `Model ${mid} failed`;
+    } catch (e) { lastErr = e.message; }
+  }
+  throw new Error(lastErr || 'Image generation not supported on this API key');
 }
 
 async function generateVeoVideo(apiKey, prompt) {
-  // Use Veo 3.1 ID
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-generate:predict?key=${apiKey}`, {
+  const modelIds = ['veo-3.1-generate', 'veo-1.5-generate', 'veo-generate'];
+  let lastErr = '';
+  
+  for (const mid of modelIds) {
+    try {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mid}:predict?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instances: [{ prompt }] })
+      });
+      const o = await r.json();
+      if (r.ok && o.predictions?.[0]?.videoUri) {
+        return { type: 'video', url: o.predictions[0].videoUri, name: `veo-${Date.now()}.mp4` };
+      }
+      lastErr = o.error?.message || `Model ${mid} failed`;
+    } catch (e) { lastErr = e.message; }
+  }
+  throw new Error(lastErr || 'Video generation not supported on this API key');
+}
+`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ instances: [{ prompt }] })
