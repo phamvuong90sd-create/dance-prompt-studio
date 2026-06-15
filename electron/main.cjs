@@ -108,6 +108,8 @@ async function geminiGenerate(apiKey, parts, system, preferredModel){
   throw new Error(last||'gemini_failed');
 }
 
+ipcMain.handle('media:download', async(_,m)=>{ const r=await fetch(m.url); const b=Buffer.from(await r.arrayBuffer()); const s=await dialog.showSaveDialog({defaultPath:m.name}); if(!s.canceled) fs.writeFileSync(s.filePath, b); return {ok:!s.canceled}; });
+ipcMain.handle('media:generate', async(_,p)=>{ /* Mock gen logic: Thuc te se goi Imagen API */ return [{type:'image', url:'https://picsum.photos/800/600', name:'gen-1.png'}]; });
 ipcMain.handle('process:run', async(_,p)=> {
   try {
     const keys=parseKeys(p.apiKeys);

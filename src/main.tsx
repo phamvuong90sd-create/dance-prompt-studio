@@ -19,6 +19,8 @@ function App(){
   const [extra,setExtra]=useState('');
   const [status,setStatus]=useState('Sẵn sàng');
   const [result,setResult]=useState('');
+  const [tab,setTab]=useState('prompts');
+  const [media,setMedia]=useState([]);
 
   useEffect(()=>{
     try{
@@ -65,8 +67,14 @@ function App(){
         <div className="card"><h2><Upload/> Ảnh quần áo</h2><button onClick={()=>pick(setOutfit,[{name:'Image',extensions:['jpg','jpeg','png','webp']}])}>Chọn ảnh quần áo</button><p>{outfit||'Không bắt buộc'}</p></div>
       </section>
       <section className="result">
-        <div className="bar"><b>{status}</b><div><button onClick={copy}><Copy size={16}/> Copy</button><button onClick={download}><Download size={16}/> TXT</button></div></div>
-        <pre>{result||'Chưa có kết quả...'}</pre>
+        <div className="bar"><b>{status}</b><div><button onClick={copy}><Copy size={16}/> Copy</button><button onClick={download}><Download size={16}/> TXT</button>
+            <button className="accent" onClick={async()=>setMedia(await api().generateMedia({type:'image',prompts:result}))}><Sparkles size={16}/> Gen Images</button></div></div>
+        <div className="tab-bar">
+          <button className={tab==='prompts'?'active':''} onClick={()=>setTab('prompts')}>Prompts</button>
+          <button className={tab==='images'?'active':''} onClick={()=>setTab('images')}>Images</button>
+          <button className={tab==='videos'?'active':''} onClick={()=>setTab('videos')}>Videos</button>
+        </div>
+        {tab==='prompts' && <pre>{result||'Chưa có kết quả...'}</pre>
       </section>
     </main>
   </div>
