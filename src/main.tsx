@@ -15,6 +15,7 @@ function App(){
   const [outfit,setOutfit]=useState('');
   const [chunk,setChunk]=useState('8');
   const [platform,setPlatform]=useState('veo');
+  const [modelName,setModelName]=useState('gemini-2.5-flash');
   const [extra,setExtra]=useState('');
   const [status,setStatus]=useState('Sẵn sàng');
   const [result,setResult]=useState('');
@@ -25,7 +26,7 @@ function App(){
     if(!model){ setStatus('Cần chọn ảnh model'); return; }
     if(!apiKeys.trim()){ setStatus('Cần Gemini API key'); return; }
     setStatus('Đang phân tích video, model, trang phục và tạo prompt...');
-    const r=await api().process({apiKeys, video, model, outfit, chunkSeconds:chunk, platform, extra});
+    const r=await api().process({apiKeys, video, model, outfit, chunkSeconds:chunk, platform, modelName, extra});
     if(r?.ok){ setResult(r.text); setStatus(`Hoàn tất: ${r.count} prompt`); }
     else setStatus('Lỗi: '+(r?.error||'unknown'));
   }
@@ -38,7 +39,7 @@ function App(){
       <p>Tạo prompt model nữ nhảy theo video mẫu</p>
       <Field label="Gemini API keys"><textarea value={apiKeys} onChange={e=>setApiKeys(e.target.value)} placeholder="Mỗi dòng một API key"/></Field>
       <Field label="Cắt prompt mỗi"><input value={chunk} onChange={e=>setChunk(e.target.value.replace(/[^0-9]/g,''))}/><small>giây</small></Field>
-      <Field label="Nền tảng prompt"><select value={platform} onChange={e=>setPlatform(e.target.value)}><option value="veo">Google Flow / Veo</option><option value="kling">Kling</option><option value="runway">Runway</option></select></Field>
+      <Field label="Gemini Model"><select value={modelName} onChange={e=>setModelName(e.target.value)}><option value="gemini-2.5-flash">Gemini 2.5 Flash</option><option value="gemini-3.5-flash">Gemini 3.5 Flash</option></select></Field><Field label="Nền tảng prompt"><select value={platform} onChange={e=>setPlatform(e.target.value)}><option value="veo">Google Flow / Veo</option><option value="kling">Kling</option><option value="runway">Runway</option></select></Field>
       <Field label="Yêu cầu thêm"><textarea value={extra} onChange={e=>setExtra(e.target.value)} placeholder="Ví dụ: cinematic, full body, no text, studio light..."/></Field>
       <button className="primary" onClick={run}><Sparkles size={18}/> Tạo prompt</button>
     </aside>

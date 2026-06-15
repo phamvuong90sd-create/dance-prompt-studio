@@ -89,8 +89,8 @@ async function waitFileReady(apiKey, file){
   return file;
 }
 
-async function geminiGenerate(apiKey, parts, system){
-  const models=['gemini-2.0-flash','gemini-1.5-flash'];
+async function geminiGenerate(apiKey, parts, system, preferredModel){
+  const models=[preferredModel, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter((v,i,a)=>v && a.indexOf(v)===i);
   let last='';
   for(const m of models){
     try{
@@ -128,7 +128,7 @@ ipcMain.handle('process:run', async(_,p)=> {
       {text:'Ref model:'},{fileData:{mimeType:modelFile.mimeType,fileUri:modelFile.uri}}
     ];
     if(outfitFile) parts.push({text:'Ref outfit:'},{fileData:{mimeType:outfitFile.mimeType,fileUri:outfitFile.uri}});
-    const text=await geminiGenerate(apiKey,parts,system);
+    const text=await geminiGenerate(apiKey,parts,system,p.modelName);
     return {ok:true,count:(text.match(/Prompt/gi)||[]).length,text};
   } catch(e) { return {ok:false,error:String(e.message||e)}; }
 });
