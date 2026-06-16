@@ -12,6 +12,7 @@ function App(){
   const [video,setVideo]=useState('');
   const [model,setModel]=useState('');
   const [outfit,setOutfit]=useState('');
+  const [background,setBackground]=useState('');
   const [chunk,setChunk]=useState('8');
   const [platform,setPlatform]=useState('veo');
   const [extra,setExtra]=useState('');
@@ -27,7 +28,7 @@ function App(){
     if(!model){ setStatus('Cần chọn ảnh model'); return; }
     if(!apiKeys.trim()){ setStatus('Cần Gemini API key'); return; }
     setStatus('Đang phân tích video/model và tạo chuỗi prompt nhảy...');
-    const r=await api().process({apiKeys, video, model, outfit, chunkSeconds:chunk, platform, extra});
+    const r=await api().process({apiKeys, video, model, outfit, background, chunkSeconds:chunk, platform, extra});
     if(r?.ok){ setResult(r.text); setStatus(`Hoàn tất: ${r.count} prompt`); }
     else setStatus('Lỗi: '+(r?.error||'unknown'));
   }
@@ -48,6 +49,7 @@ function App(){
       <section className="grid">
         <div className="card"><h2><Upload/> Video mẫu</h2><button onClick={()=>pick(setVideo,[{name:'Video',extensions:['mp4','mov','webm','mkv']}])}>Chọn video</button><p>{video||'Chưa chọn video'}</p></div>
         <div className="card"><h2><Upload/> Ảnh model</h2><button onClick={()=>pick(setModel,[{name:'Image',extensions:['jpg','jpeg','png','webp']}])}>Chọn ảnh model</button><p>{model||'Chưa chọn ảnh model'}</p></div>
+        <div className="card"><h2><Upload/> Ảnh Background</h2><button onClick={()=>pick(setBackground,[{name:'Image',extensions:['jpg','jpeg','png','webp']}])}>Chọn background</button><p>{background||'Chưa chọn background'}</p></div>
         <div className="card"><h2><Upload/> Ảnh quần áo</h2><button onClick={()=>pick(setOutfit,[{name:'Image',extensions:['jpg','jpeg','png','webp']}])}>Chọn ảnh quần áo</button><p>{outfit||'Không bắt buộc'}</p></div>
       </section>
       <section className="result">

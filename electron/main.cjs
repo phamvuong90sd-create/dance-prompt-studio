@@ -36,8 +36,9 @@ ipcMain.handle('process:run', async(_,p)=> {
   try {
     const keys=parseKeys(p.apiKeys); const apiKey=keys[0];
     const videoFile=await waitReady(apiKey, await uploadFile(apiKey,p.video));
-    const modelFile=await waitReady(apiKey, await uploadFile(apiKey,p.model));
+        const modelFile=await waitReady(apiKey, await uploadFile(apiKey,p.model));
     let outfitFile=null; if(p.outfit) outfitFile=await waitReady(apiKey, await uploadFile(apiKey,p.outfit));
+    let bgFile=null; if(p.background) bgFile=await waitReady(apiKey, await uploadFile(apiKey,p.background));
     
     const system=`You are Dance Prompt Studio director. Convert reference dance video into precise prompts. Mimic choreography 100% accuracy. Lock model identity and outfit.`;
     const instruction=`Create sequence of prompts for ${p.platform}. Chunk: ${p.chunkSeconds}s.
@@ -47,7 +48,8 @@ ipcMain.handle('process:run', async(_,p)=> {
     Output: Prompt 01, Prompt 02...`;
 
     const parts=[{text:instruction},{fileData:{mimeType:videoFile.mimeType,fileUri:videoFile.uri}},{fileData:{mimeType:modelFile.mimeType,fileUri:modelFile.uri}}];
-    if(outfitFile) parts.push({fileData:{mimeType:outfitFile.mimeType,fileUri:outfitFile.uri}});
+    if(outfitFile) parts.push({text:"Clothing reference:"},{fileData:{mimeType:outfitFile.mimeType,fileUri:outfitFile.uri}});
+    if(bgFile) parts.push({text:"Background reference:"},{fileData:{mimeType:bgFile.mimeType,fileUri:bgFile.uri}});
 
     const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts}],systemInstruction:{parts:[{text:system}]},generationConfig:{temperature:0.25}})});
     const o=await r.json();
